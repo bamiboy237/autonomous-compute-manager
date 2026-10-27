@@ -25,7 +25,7 @@ cp .env.example .env
 | `just up` / `just down -v` | start (and wait until healthy) / stop and reset the Compose stack |
 | `just ps` / `just logs [svc…]` | stack status and health / follow logs |
 | `just test-integration` | tests marked `integration` against the running stack |
-| `just migrate` | apply database migrations |
+| `just migrate` | apply database migrations (`alembic upgrade head`; see [DATABASE.md](DATABASE.md)) |
 | `just ci` | lint + typecheck + unit tests, as CI runs them |
 
 ## Dev stack

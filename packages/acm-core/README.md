@@ -3,7 +3,8 @@
 Shared foundation used by every ACM package: settings, ids, errors, logging and the domain
 model. Import as `acm_core`. Design background: [ARCHITECTURE.md §4](../../docs/ARCHITECTURE.md).
 
-Database (SQLAlchemy/Alembic) and event schemas will also live here (THE-27 and later).
+The database layer (SQLAlchemy models, Alembic migrations, repositories) is documented in
+[docs/DATABASE.md](../../docs/DATABASE.md). Event schemas will also live here (later tickets).
 
 ## Modules
 
@@ -14,6 +15,8 @@ Database (SQLAlchemy/Alembic) and event schemas will also live here (THE-27 and 
 | `acm_core.errors` | `ACMError` hierarchy, `ErrorPayload` |
 | `acm_core.logging` | `configure_logging()`, `get_logger()`, `trace_context()`, `set_trace_context_provider()` |
 | `acm_core.domain` | Entity models, enums, `StateMachine`, `RUN_/ATTEMPT_/DECISION_STATE_MACHINE` |
+| `acm_core.db` | Tables (`models`), domain mapping, `create_engine()`/`create_session_factory()`, `migrate.upgrade()` |
+| `acm_core.repos` | `UnitOfWork` with a repository per aggregate (optimistic concurrency, state guards) |
 
 ## Settings
 
