@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Go
+edge/bin/
+edge/dist/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Local data
+*.log
