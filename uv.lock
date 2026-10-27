@@ -125,10 +125,23 @@ version = "0.1.0"
 source = { editable = "packages/acm-providers" }
 dependencies = [
     { name = "acm-core" },
+    { name = "pydantic" },
+]
+
+[package.optional-dependencies]
+testing = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "acm-core", editable = "packages/acm-core" }]
+requires-dist = [
+    { name = "acm-core", editable = "packages/acm-core" },
+    { name = "pydantic", specifier = ">=2.14" },
+    { name = "pytest", marker = "extra == 'testing'", specifier = ">=9.0" },
+    { name = "pytest-asyncio", marker = "extra == 'testing'", specifier = ">=1.4" },
+]
+provides-extras = ["testing"]
 
 [[package]]
 name = "acm-sdk"
