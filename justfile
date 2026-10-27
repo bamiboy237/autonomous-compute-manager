@@ -34,21 +34,24 @@ test:
 
 # Integration tests against the Compose stack (`just up` first)
 test-integration:
-    uv run pytest -m integration || [ $? -eq 5 ]
+    uv run pytest -m integration
 
-# Start the dev stack and wait until healthy
+# Start the dev stack and wait until healthy (COMPOSE_PROFILES=observability for otel + Grafana)
 up:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [ ! -f deploy/compose/compose.yaml ]; then echo "compose stack not defined yet (THE-25)"; exit 0; fi
-    {{compose}} up -d --wait
+    {{compose}} up -d --build --wait --wait-timeout 300
+    {{compose}} run --rm minio-init
 
-# Stop the dev stack (pass -v to drop volumes)
+# Stop the dev stack, all profiles included (pass -v to drop volumes)
 down *args:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [ ! -f deploy/compose/compose.yaml ]; then exit 0; fi
-    {{compose}} down {{args}}
+    {{compose}} --profile '*' down --remove-orphans {{args}}
+
+# Show dev stack containers and their health
+ps:
+    {{compose}} --profile '*' ps
+
+# Follow dev stack logs (optionally for given services)
+logs *services:
+    {{compose}} --profile '*' logs -f {{services}}
 
 # Apply database migrations
 migrate:

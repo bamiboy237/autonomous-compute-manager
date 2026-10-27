@@ -1,0 +1,191 @@
+# Autonomous Compute Manager — local dev stack (ARCHITECTURE.md §14).
+#
+#   just up        start and wait until every service is healthy
+#   just down -v   stop and drop all volumes (full reset)
+#
+# Every port and credential comes from the environment (`.env`, loaded by `just`), with
+# the defaults below mirroring `.env.example`. Host ports bind to ACM_BIND_HOST
+# (127.0.0.1 by default) so the stack is not reachable from other machines.
+# Set COMPOSE_PROFILES=observability to also start otel-collector and Grafana.
+
+name: acm
+
+x-healthcheck: &healthcheck
+  interval: 5s
+  timeout: 5s
+  retries: 30
+  start_period: 10s
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg17-trixie
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${ACM_POSTGRES_USER:-acm}
+      POSTGRES_PASSWORD: ${ACM_POSTGRES_PASSWORD:-acm}
+      POSTGRES_DB: ${ACM_POSTGRES_DB:-acm}
+    ports:
+      - ${ACM_BIND_HOST:-127.0.0.1}:${ACM_POSTGRES_PORT:-5432}:5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+
+  # Temporal server. auto-setup creates and migrates the `temporal` and
+  # `temporal_visibility` databases in the shared Postgres, then registers the namespace.
+  temporal:
+    image: temporalio/auto-setup:1.29.7
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_SEEDS: postgres
+      POSTGRES_USER: ${ACM_POSTGRES_USER:-acm}
+      POSTGRES_PWD: ${ACM_POSTGRES_PASSWORD:-acm}
+      DBNAME: temporal
+      VISIBILITY_DBNAME: temporal_visibility
+      DEFAULT_NAMESPACE: ${ACM_TEMPORAL_NAMESPACE:-default}
+      DEFAULT_NAMESPACE_RETENTION: 72h
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CLI_ADDRESS: temporal:7233
+    ports:
+      - ${ACM_BIND_HOST:-127.0.0.1}:${ACM_TEMPORAL_PORT:-7233}:7233
+    volumes:
+      - ./temporal/dynamicconfig.yaml:/etc/temporal/config/dynamicconfig/development-sql.yaml:ro
+    healthcheck:
+      <<: *healthcheck
+      start_period: 30s
+      # Healthy only once the namespace exists, so clients can use it immediately.
+      test:
+        - CMD-SHELL
+        - temporal operator namespace describe --address temporal:7233 -n "$${DEFAULT_NAMESPACE}"
+
+  temporal-ui:
+    image: temporalio/ui:2.42.1
+    restart: unless-stopped
+    depends_on:
+      temporal:
+        condition: service_healthy
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_DEFAULT_NAMESPACE: ${ACM_TEMPORAL_NAMESPACE:-default}
+    ports:
+      - ${ACM_BIND_HOST:-127.0.0.1}:${ACM_TEMPORAL_UI_PORT:-8233}:8080
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+
+  nats:
+    image: nats:2.12.1-alpine
+    restart: unless-stopped
+    command:
+      - --jetstream
+      - --store_dir=/data
+      - --http_port=8222
+      - --auth=${ACM_NATS_TOKEN:-acm-dev-token}
+    ports:
+      - ${ACM_BIND_HOST:-127.0.0.1}:${ACM_NATS_PORT:-4222}:4222
+      - ${ACM_BIND_HOST:-127.0.0.1}:${ACM_NATS_MONITOR_PORT:-8222}:8222
+    volumes:
+      - nats-data:/data
+    healthcheck:
+      <<: *healthcheck
+      # /healthz fails until JetStream is ready.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8222/healthz"]
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.8.9.20
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: ${ACM_CLICKHOUSE_DB:-acm}
+      CLICKHOUSE_USER: ${ACM_CLICKHOUSE_USER:-acm}
+      CLICKHOUSE_PASSWORD: ${ACM_CLICKHOUSE_PASSWORD:-acm}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - ${ACM_BIND_HOST:-127.0.0.1}:${ACM_CLICKHOUSE_HTTP_PORT:-8123}:8123
+      - ${ACM_BIND_HOST:-127.0.0.1}:${ACM_CLICKHOUSE_NATIVE_PORT:-19000}:9000
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8123/ping"]
+
+  # Upstream stopped publishing MinIO images in 2025; pgsty/minio is a maintained build
+  # of the same server. Any S3-compatible store works in production.
+  minio:
+    image: pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${ACM_S3_ACCESS_KEY:-acm}
+      MINIO_ROOT_PASSWORD: ${ACM_S3_SECRET_KEY:-acm-dev-secret}
+    ports:
+      - ${ACM_BIND_HOST:-127.0.0.1}:${ACM_MINIO_PORT:-9000}:9000
+      - ${ACM_BIND_HOST:-127.0.0.1}:${ACM_MINIO_CONSOLE_PORT:-9001}:9001
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:9000/minio/health/live"]
+
+  # One-shot: create the artifact bucket. Idempotent; `just up` runs it once the stack is
+  # healthy. It lives in its own profile because `up --wait` treats an exited container
+  # as a failure.
+  minio-init:
+    profiles: [bootstrap]
+    image: pgsty/mc:RELEASE.2026-10-26T00-00-00Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      ACM_S3_ACCESS_KEY: ${ACM_S3_ACCESS_KEY:-acm}
+      ACM_S3_SECRET_KEY: ${ACM_S3_SECRET_KEY:-acm-dev-secret}
+      ACM_S3_BUCKET: ${ACM_S3_BUCKET:-acm}
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - |
+        mc alias set local http://minio:9000 "$$ACM_S3_ACCESS_KEY" "$$ACM_S3_SECRET_KEY"
+        mc mb --ignore-existing "local/$$ACM_S3_BUCKET"
+
+  otel-collector:
+    profiles: [observability]
+    build: ./otel-collector
+    image: acm-dev/otel-collector:0.138.0
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - ${ACM_BIND_HOST:-127.0.0.1}:${ACM_OTEL_GRPC_PORT:-4317}:4317
+      - ${ACM_BIND_HOST:-127.0.0.1}:${ACM_OTEL_HTTP_PORT:-4318}:4318
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "/bin/busybox", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:13133/"]
+
+  grafana:
+    profiles: [observability]
+    image: grafana/grafana:12.2.1
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${ACM_GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${ACM_GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    ports:
+      - ${ACM_BIND_HOST:-127.0.0.1}:${ACM_GRAFANA_PORT:-3000}:3000
+    volumes:
+      - grafana-data:/var/lib/grafana
+    healthcheck:
+      <<: *healthcheck
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health"]
+
+volumes:
+  postgres-data:
+  nats-data:
+  clickhouse-data:
+  minio-data:
+  grafana-data:
