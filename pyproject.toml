@@ -14,6 +14,7 @@ dependencies = [
     "acm-api",
     "acm-cli",
     "acm-eval",
+    "acm-casmi",
 ]
 
 [dependency-groups]
@@ -22,6 +23,7 @@ dev = [
     "asyncpg>=0.32.0",
     "clickhouse-connect>=1.11.0",
     "nats-py>=2.16.0",
+    "pandas-stubs>=3.0",
     "pre-commit>=4.0",
     "pyright>=1.1.390",
     "pytest>=8.3",
@@ -37,7 +39,7 @@ dev = [
 package = false
 
 [tool.uv.workspace]
-members = ["packages/*"]
+members = ["packages/*", "workloads/casmi"]
 
 [tool.uv.sources]
 acm-core = { workspace = true }
@@ -50,11 +52,12 @@ acm-worker = { workspace = true }
 acm-api = { workspace = true }
 acm-cli = { workspace = true }
 acm-eval = { workspace = true }
+acm-casmi = { workspace = true }
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["ui"]
+extend-exclude = ["ui", "workloads/casmi/tests/reference"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "N", "UP", "B", "SIM", "ASYNC", "PT", "RUF", "TID"]
@@ -71,14 +74,15 @@ known-first-party = [
     "acm_api",
     "acm_cli",
     "acm_eval",
+    "casmi",
 ]
 
 [tool.pyright]
 pythonVersion = "3.12"
 venvPath = "."
 venv = ".venv"
-include = ["packages", "tests"]
-exclude = ["**/__pycache__", "**/.venv"]
+include = ["packages", "tests", "workloads"]
+exclude = ["**/__pycache__", "**/.venv", "workloads/casmi/tests/reference"]
 typeCheckingMode = "standard"
 strict = [
     "packages/acm-core/src",
@@ -87,7 +91,7 @@ strict = [
 ]
 
 [tool.pytest.ini_options]
-testpaths = ["packages", "tests"]
+testpaths = ["packages", "tests", "workloads"]
 addopts = ["--import-mode=importlib", "--strict-markers", "-ra"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
