@@ -54,7 +54,7 @@ cp .env.example .env
 
 ## Layout
 
-Python packages live in `packages/<name>/src/<module>` with tests in `packages/<name>/tests`. Add a dependency to one package with `uv add --package acm-core <dep>`. Workspace packages depend on each other through `[tool.uv.sources]` entries with `workspace = true`.
+Python packages live in `packages/<name>/src/<module>` with tests in `packages/<name>/tests`. Workloads that are also workspace members (for example `workloads/casmi`, package `acm-casmi`) use the same layout under `workloads/<name>`. Add a dependency to one package with `uv add --package acm-core <dep>`. Workspace packages depend on each other through `[tool.uv.sources]` entries with `workspace = true`.
 
 The Go daemon lives in `edge/` (`cd edge && go test ./...`).
 
