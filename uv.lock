@@ -110,10 +110,14 @@ version = "0.1.0"
 source = { editable = "packages/acm-storage" }
 dependencies = [
     { name = "acm-core" },
+    { name = "aioboto3" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "acm-core", editable = "packages/acm-core" }]
+requires-dist = [
+    { name = "acm-core", editable = "packages/acm-core" },
+    { name = "aioboto3", specifier = ">=15.5.0" },
+]
 
 [[package]]
 name = "acm-telemetry"

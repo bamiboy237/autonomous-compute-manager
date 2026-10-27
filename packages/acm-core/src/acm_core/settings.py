@@ -113,6 +113,16 @@ class StorageSettings(_Section):
     region: str = "us-east-1"
     access_key_id: str | None = None
     secret_access_key: SecretStr | None = None
+    max_attempts: int = Field(default=5, ge=1)
+    """Attempts per S3 request, including the first (botocore standard retry mode)."""
+    part_size_bytes: int = Field(default=64 * 1024 * 1024, ge=5 * 1024 * 1024)
+    """Multipart part size; files larger than this upload in parts. S3 minimum is 5 MiB."""
+    max_concurrency: int = Field(default=4, ge=1)
+    """Parallel part uploads / blob transfers per operation."""
+    cache_dir: Path = Path("~/.cache/acm/blobs")
+    """Local content-addressed blob cache (``~`` is expanded)."""
+    cache_max_bytes: int = Field(default=50 * 1024**3, ge=0)
+    """Cache size bound; least recently used blobs are evicted above it."""
 
 
 class ModelsSettings(_Section):
