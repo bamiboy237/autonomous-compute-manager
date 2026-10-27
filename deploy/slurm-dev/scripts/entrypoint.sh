@@ -16,7 +16,7 @@ wait_for_port() {
 }
 
 install_config() {
-    cp /etc/slurm-dev/slurm.conf /etc/slurm-dev/gres.conf /etc/slurm/
+    cp /etc/slurm-dev/slurm.conf /etc/slurm-dev/gres.conf /etc/slurm-dev/cgroup.conf /etc/slurm/
     install -o slurm -g slurm -m 0600 /etc/slurm-dev/slurmdbd.conf /etc/slurm/slurmdbd.conf
     install -o slurm -g slurm -m 0600 "$secrets/jwt_hs256.key" /etc/slurm/jwt_hs256.key
 }

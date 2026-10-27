@@ -74,6 +74,8 @@ services:
     <<: *slurm
     hostname: c1
     command: [slurmd]
+    # Writable cgroup tree: slurmd initializes cgroup/v2 on startup even without cgroup enforcement.
+    privileged: true
     volumes:
       - slurm-secrets:/slurm-secrets:ro
       - scratch:/scratch
@@ -88,6 +90,8 @@ services:
     <<: *slurm
     hostname: c2
     command: [slurmd]
+    # Writable cgroup tree: slurmd initializes cgroup/v2 on startup even without cgroup enforcement.
+    privileged: true
     volumes:
       - slurm-secrets:/slurm-secrets:ro
       - scratch:/scratch
