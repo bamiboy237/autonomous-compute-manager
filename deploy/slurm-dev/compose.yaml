@@ -1,0 +1,139 @@
+# Containerized Slurm dev cluster. Start with `just up-slurm`; see README.md.
+name: acm-slurm-dev
+
+x-slurm: &slurm
+  image: acm/slurm-dev:23.11.4
+  build:
+    context: .
+  profiles: [slurm]
+  init: true
+  volumes:
+    - slurm-secrets:/slurm-secrets:ro
+  depends_on:
+    init:
+      condition: service_completed_successfully
+
+x-healthcheck: &healthcheck
+  interval: 3s
+  timeout: 10s
+  retries: 60
+  start_period: 5s
+
+services:
+  init:
+    image: acm/slurm-dev:23.11.4
+    build:
+      context: .
+    profiles: [slurm]
+    command: [init]
+    volumes:
+      - slurm-secrets:/slurm-secrets
+
+  mariadb:
+    image: mariadb:11.4@sha256:c9c7cdabdb07fb2a1c02dd2f3d803bd3310cd761a806b0da60b87ab2d02454e1
+    profiles: [slurm]
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+      MARIADB_DATABASE: slurm_acct_db
+      MARIADB_USER: slurm
+      MARIADB_PASSWORD: slurmdbpass
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, healthcheck.sh, --connect, --innodb_initialized]
+
+  slurmdbd:
+    <<: *slurm
+    hostname: slurmdbd
+    command: [slurmdbd]
+    depends_on:
+      init:
+        condition: service_completed_successfully
+      mariadb:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, healthcheck.sh, slurmdbd]
+
+  slurmctld:
+    <<: *slurm
+    hostname: slurmctld
+    command: [slurmctld]
+    volumes:
+      - slurm-secrets:/slurm-secrets:ro
+      - slurmctld-state:/var/spool/slurmctld
+    depends_on:
+      slurmdbd:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, healthcheck.sh, slurmctld]
+
+  c1:
+    <<: *slurm
+    hostname: c1
+    command: [slurmd]
+    volumes:
+      - slurm-secrets:/slurm-secrets:ro
+      - scratch:/scratch
+    depends_on:
+      slurmctld:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, healthcheck.sh, slurmd]
+
+  c2:
+    <<: *slurm
+    hostname: c2
+    command: [slurmd]
+    volumes:
+      - slurm-secrets:/slurm-secrets:ro
+      - scratch:/scratch
+    depends_on:
+      slurmctld:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, healthcheck.sh, slurmd]
+
+  slurmrestd:
+    <<: *slurm
+    hostname: slurmrestd
+    command: [slurmrestd]
+    ports:
+      - "127.0.0.1:${SLURM_DEV_RESTD_PORT:-6820}:6820"
+    depends_on:
+      slurmctld:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, healthcheck.sh, slurmrestd]
+
+  login:
+    <<: *slurm
+    hostname: login
+    command: [login]
+    ports:
+      - "127.0.0.1:${SLURM_DEV_SSH_PORT:-2222}:22"
+    volumes:
+      - slurm-secrets:/slurm-secrets:ro
+      - scratch:/scratch
+      - ./.ssh/id_ed25519.pub:/ssh/authorized_keys:ro
+    depends_on:
+      c1:
+        condition: service_healthy
+      c2:
+        condition: service_healthy
+      slurmrestd:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, healthcheck.sh, login]
+
+volumes:
+  slurm-secrets:
+  mariadb-data:
+  slurmctld-state:
+  scratch:
