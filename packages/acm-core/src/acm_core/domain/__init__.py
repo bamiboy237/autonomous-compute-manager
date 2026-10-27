@@ -1,0 +1,176 @@
+"""Domain models for every entity in ARCHITECTURE.md §4.
+
+Models are pydantic v2, immutable and strict about unknown fields. Status fields of
+``Run``, ``Attempt`` and ``Decision`` change only through their ``transition_to()``, which
+checks the entity's ``StateMachine``. Import from this package rather than submodules.
+"""
+
+from acm_core.domain.campaign import (
+    DEFAULT_AUTO_ALLOWED_ACTIONS,
+    AutonomyMode,
+    Budget,
+    BudgetLine,
+    Campaign,
+    CampaignStatus,
+    Metric,
+    MetricDirection,
+    Policy,
+)
+from acm_core.domain.common import (
+    Actor,
+    ActorKind,
+    AgentRole,
+    ContentHash,
+    Currency,
+    DomainModel,
+    Entity,
+    Money,
+    NonNegativeDecimal,
+    RiskLevel,
+    utcnow,
+)
+from acm_core.domain.decision import (
+    DECISION_STATE_MACHINE,
+    ActionKind,
+    Approval,
+    ApprovalVerdict,
+    ArtifactEvidence,
+    Decision,
+    DecisionKind,
+    DecisionStatus,
+    Evidence,
+    EvidenceKind,
+    EvidenceRef,
+    LogExcerptEvidence,
+    MetricQueryEvidence,
+    PriorDecisionEvidence,
+    RunComparisonEvidence,
+)
+from acm_core.domain.incident import (
+    FailureClass,
+    Incident,
+    IncidentStatus,
+    RecoveryStep,
+    RecoveryStepOutcome,
+)
+from acm_core.domain.kaggle import (
+    KaggleSubmission,
+    KaggleSubmissionStatus,
+)
+from acm_core.domain.ledger import (
+    LEDGER_ACCOUNT_PATTERN,
+    LedgerDirection,
+    LedgerEntry,
+    LedgerEntryKind,
+    ModelCall,
+    ModelCallStatus,
+    check_balanced,
+)
+from acm_core.domain.memory import (
+    MemoryItem,
+    MemorySourceKind,
+)
+from acm_core.domain.provider import (
+    ComputeTarget,
+    ProviderAccount,
+    ProviderKind,
+)
+from acm_core.domain.run import (
+    ATTEMPT_STATE_MACHINE,
+    RUN_STATE_MACHINE,
+    Attempt,
+    AttemptStatus,
+    Experiment,
+    ExperimentStatus,
+    Hypothesis,
+    HypothesisStatus,
+    ResourceRequest,
+    Run,
+    RunStatus,
+)
+from acm_core.domain.state_machine import (
+    StateMachine,
+)
+from acm_core.domain.storage import (
+    Artifact,
+    ArtifactKind,
+    Checkpoint,
+)
+from acm_core.domain.workload import (
+    CodeVersion,
+    Workload,
+)
+
+__all__ = [
+    "ATTEMPT_STATE_MACHINE",
+    "DECISION_STATE_MACHINE",
+    "DEFAULT_AUTO_ALLOWED_ACTIONS",
+    "LEDGER_ACCOUNT_PATTERN",
+    "RUN_STATE_MACHINE",
+    "ActionKind",
+    "Actor",
+    "ActorKind",
+    "AgentRole",
+    "Approval",
+    "ApprovalVerdict",
+    "Artifact",
+    "ArtifactEvidence",
+    "ArtifactKind",
+    "Attempt",
+    "AttemptStatus",
+    "AutonomyMode",
+    "Budget",
+    "BudgetLine",
+    "Campaign",
+    "CampaignStatus",
+    "Checkpoint",
+    "CodeVersion",
+    "ComputeTarget",
+    "ContentHash",
+    "Currency",
+    "Decision",
+    "DecisionKind",
+    "DecisionStatus",
+    "DomainModel",
+    "Entity",
+    "Evidence",
+    "EvidenceKind",
+    "EvidenceRef",
+    "Experiment",
+    "ExperimentStatus",
+    "FailureClass",
+    "Hypothesis",
+    "HypothesisStatus",
+    "Incident",
+    "IncidentStatus",
+    "KaggleSubmission",
+    "KaggleSubmissionStatus",
+    "LedgerDirection",
+    "LedgerEntry",
+    "LedgerEntryKind",
+    "LogExcerptEvidence",
+    "MemoryItem",
+    "MemorySourceKind",
+    "Metric",
+    "MetricDirection",
+    "MetricQueryEvidence",
+    "ModelCall",
+    "ModelCallStatus",
+    "Money",
+    "NonNegativeDecimal",
+    "Policy",
+    "PriorDecisionEvidence",
+    "ProviderAccount",
+    "ProviderKind",
+    "RecoveryStep",
+    "RecoveryStepOutcome",
+    "ResourceRequest",
+    "RiskLevel",
+    "Run",
+    "RunComparisonEvidence",
+    "RunStatus",
+    "StateMachine",
+    "Workload",
+    "check_balanced",
+    "utcnow",
+]

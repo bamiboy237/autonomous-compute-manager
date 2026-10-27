@@ -68,9 +68,12 @@ jobs:
       - uses: extractions/setup-just@v3
       - run: uv sync --all-packages --locked
       - run: just up
+        env:
+          # Also start the optional profile so its healthchecks are exercised.
+          COMPOSE_PROFILES: observability
       - run: just test-integration
       - if: failure()
-        run: docker compose -f deploy/compose/compose.yaml logs --no-color || true
+        run: docker compose -f deploy/compose/compose.yaml --profile '*' logs --no-color || true
       - if: always()
         run: just down -v
 
