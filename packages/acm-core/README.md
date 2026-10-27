@@ -48,6 +48,7 @@ form (uppercase ULID) is accepted.
 | `att` | `AttemptId` | `mem` | `MemoryItemId` |
 | `pa` | `ProviderAccountId` | `ksub` | `KaggleSubmissionId` |
 | `tgt` | `ComputeTargetId` | `ckpt` | `CheckpointId` |
+| `evt` | `EventId` (bus events) | | |
 
 ```python
 run_id = RunId.new()  # mint

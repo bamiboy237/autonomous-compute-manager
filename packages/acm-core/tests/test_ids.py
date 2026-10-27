@@ -17,6 +17,7 @@ from acm_core.ids import (
 EXPECTED_PREFIXES = {
     "cmp", "bgt", "bdl", "wl", "cv", "hyp", "exp", "run", "att", "pa", "tgt", "ckpt",
     "art", "dec", "evd", "apr", "led", "ltx", "mc", "inc", "mem", "ksub",
+    "evt",
 }  # fmt: skip
 
 

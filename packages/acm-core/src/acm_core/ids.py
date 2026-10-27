@@ -44,6 +44,7 @@ __all__ = [
     "CodeVersionId",
     "ComputeTargetId",
     "DecisionId",
+    "EventId",
     "EvidenceId",
     "ExperimentId",
     "HypothesisId",
@@ -280,3 +281,7 @@ class MemoryItemId(PrefixedId, prefix="mem"):
 
 class KaggleSubmissionId(PrefixedId, prefix="ksub"):
     """Id of a ``KaggleSubmission``."""
+
+
+class EventId(PrefixedId, prefix="evt"):
+    """Id of a bus event (``acm_core.events``); also its JetStream de-duplication key."""
