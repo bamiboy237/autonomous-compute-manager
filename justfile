@@ -55,7 +55,7 @@ logs *services:
 
 # Apply database migrations
 migrate:
-    @echo "migrations not defined yet (THE-27)"
+    uv run python -m acm_core.db upgrade
 
 # Everything CI runs on every PR
 ci: lint typecheck test

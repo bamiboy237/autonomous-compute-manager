@@ -65,6 +65,11 @@ class DatabaseSettings(_Section):
     pool_size: int = Field(default=10, ge=1)
     echo: bool = False
     """Log every SQL statement (debugging only)."""
+    embedding_dim: int = Field(default=1024, ge=1, le=2000)
+    """Dimension N of ``memory_items.embedding vector(N)``, fixed when the migration runs.
+    pgvector's HNSW index supports at most 2000 dimensions."""
+    pgbouncer: bool = False
+    """Connect through PgBouncer in transaction-pooling mode (disables prepared statements)."""
 
 
 class TemporalSettings(_Section):
