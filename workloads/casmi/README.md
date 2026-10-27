@@ -119,9 +119,10 @@ enveda-180`) for the closest match to the test instrument.
 
 ```sh
 uv run pytest workloads/casmi                      # unit tests, no network
-CASMI_TEST_STORE_URL=s3://acm-artifacts uv run pytest workloads/casmi -m integration
+just up && uv run pytest workloads/casmi -m integration
 ```
 
-The integration tests need the right environment. The artifact test needs `CASMI_TEST_STORE_URL`
-and the `AWS_*` variables. The live Kaggle download needs `KAGGLE_USERNAME` and `KAGGLE_KEY`.
-Without them, each test skips and says what is missing.
+The artifact integration test round-trips a dataset through the Compose stack's MinIO, using the
+`ACM_STORAGE__*` settings (from the environment, else `.env.example`) under a throwaway prefix.
+The live Kaggle download test needs `KAGGLE_USERNAME` and `KAGGLE_KEY`; without them it skips
+and says what is missing.

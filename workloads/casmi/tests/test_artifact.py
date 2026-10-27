@@ -1,8 +1,9 @@
 import os
+import uuid
 from pathlib import Path
 
 import pytest
-from obstore.store import LocalStore, MemoryStore
+from obstore.store import LocalStore, MemoryStore, S3Store
 
 from casmi.artifact import (
     blob_path,
@@ -74,13 +75,33 @@ async def test_duplicate_names_rejected(competition_dir: Path, tmp_path: Path) -
         await describe_files([competition_dir / "train.parquet", other])
 
 
+def _setting(name: str) -> str:
+    """Read a setting from the environment, else from .env.example (as the Compose stack does)."""
+    if name in os.environ:
+        return os.environ[name]
+    env_example = Path(__file__).resolve().parents[3] / ".env.example"
+    for line in env_example.read_text().splitlines():
+        key, sep, value = line.partition("=")
+        if sep and key.strip() == name:
+            return value.strip()
+    raise KeyError(f"{name} is not set and not documented in .env.example")
+
+
 @pytest.mark.integration
-@pytest.mark.skipif(
-    not os.environ.get("CASMI_TEST_STORE_URL"),
-    reason="set CASMI_TEST_STORE_URL (e.g. s3://acm-artifacts with AWS_* for MinIO) to run",
-)
-async def test_publish_to_object_store(competition_dir: Path, tmp_path: Path) -> None:
-    store = open_store(os.environ["CASMI_TEST_STORE_URL"])
+async def test_publish_to_compose_minio(competition_dir: Path, tmp_path: Path) -> None:
+    """Round-trip through the Compose stack's MinIO (`just up`), under a throwaway prefix."""
+    store = S3Store(
+        _setting("ACM_STORAGE__BUCKET"),
+        prefix=f"test/casmi/{uuid.uuid4().hex}",
+        endpoint=_setting("ACM_STORAGE__ENDPOINT_URL"),
+        region=_setting("ACM_STORAGE__REGION"),
+        access_key_id=_setting("ACM_STORAGE__ACCESS_KEY_ID"),
+        secret_access_key=_setting("ACM_STORAGE__SECRET_ACCESS_KEY"),
+        client_options={"allow_http": True},
+    )
     manifest = await publish_dataset(store, _files(competition_dir), source="integration-test")
+    again = await publish_dataset(store, _files(competition_dir), source="integration-test")
+    assert again.version == manifest.version
     fetched = await fetch_dataset(store, tmp_path / "copy", version=manifest.version)
-    assert sorted(p.name for p in fetched) == sorted(COMPETITION_FILES)
+    for path in fetched:
+        assert path.read_bytes() == (competition_dir / path.name).read_bytes()
