@@ -136,6 +136,7 @@ dependencies = [
     { name = "acm-providers" },
     { name = "acm-storage" },
     { name = "acm-telemetry" },
+    { name = "temporalio" },
 ]
 
 [package.metadata]
@@ -145,6 +146,7 @@ requires-dist = [
     { name = "acm-providers", editable = "packages/acm-providers" },
     { name = "acm-storage", editable = "packages/acm-storage" },
     { name = "acm-telemetry", editable = "packages/acm-telemetry" },
+    { name = "temporalio", specifier = ">=1.34.0" },
 ]
 
 [[package]]

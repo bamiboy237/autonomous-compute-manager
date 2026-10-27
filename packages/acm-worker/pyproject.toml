@@ -10,6 +10,7 @@ dependencies = [
     "acm-telemetry",
     "acm-providers",
     "acm-agents",
+    "temporalio>=1.34.0",
 ]
 
 [build-system]
