@@ -1,0 +1,89 @@
+[project]
+name = "acm-workspace"
+version = "0.0.0"
+description = "Autonomous Compute Manager workspace root (not a package)."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "acm-core",
+    "acm-sdk",
+    "acm-storage",
+    "acm-telemetry",
+    "acm-providers",
+    "acm-agents",
+    "acm-worker",
+    "acm-api",
+    "acm-cli",
+    "acm-eval",
+]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.0",
+    "pyright>=1.1.390",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.25",
+    "ruff>=0.8",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+acm-core = { workspace = true }
+acm-sdk = { workspace = true }
+acm-storage = { workspace = true }
+acm-telemetry = { workspace = true }
+acm-providers = { workspace = true }
+acm-agents = { workspace = true }
+acm-worker = { workspace = true }
+acm-api = { workspace = true }
+acm-cli = { workspace = true }
+acm-eval = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["ui"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "UP", "B", "SIM", "ASYNC", "PT", "RUF", "TID"]
+
+[tool.ruff.lint.isort]
+known-first-party = [
+    "acm",
+    "acm_core",
+    "acm_storage",
+    "acm_telemetry",
+    "acm_providers",
+    "acm_agents",
+    "acm_worker",
+    "acm_api",
+    "acm_cli",
+    "acm_eval",
+]
+
+[tool.pyright]
+pythonVersion = "3.12"
+venvPath = "."
+venv = ".venv"
+include = ["packages"]
+exclude = ["**/__pycache__", "**/.venv"]
+typeCheckingMode = "standard"
+strict = [
+    "packages/acm-core/src",
+    "packages/acm-providers/src",
+    "packages/acm-worker/src",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["packages"]
+addopts = ["--import-mode=importlib", "--strict-markers", "-ra"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "integration: needs the Docker Compose stack (`just up`)",
+    "slurm: needs the containerized Slurm cluster (`just up-slurm`)",
+]

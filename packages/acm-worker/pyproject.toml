@@ -1,0 +1,27 @@
+[project]
+name = "acm-worker"
+version = "0.1.0"
+description = "Temporal workflows, activities and worker entrypoints."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "acm-core",
+    "acm-storage",
+    "acm-telemetry",
+    "acm-providers",
+    "acm-agents",
+]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/acm_worker"]
+
+[tool.uv.sources]
+acm-core = { workspace = true }
+acm-storage = { workspace = true }
+acm-telemetry = { workspace = true }
+acm-providers = { workspace = true }
+acm-agents = { workspace = true }
