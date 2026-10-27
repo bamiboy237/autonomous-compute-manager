@@ -99,7 +99,7 @@ class ClickHouseSettings(_Section):
     port: int = Field(default=8123, ge=1, le=65535)
     """HTTP interface port."""
     database: str = "acm"
-    username: str = "default"
+    username: str = "acm"
     password: SecretStr = SecretStr("")
     secure: bool = False
 
