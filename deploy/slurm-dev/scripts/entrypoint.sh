@@ -15,6 +15,20 @@ wait_for_port() {
     done
 }
 
+# slurmd initializes the cgroup/v2 plugin at startup (even with proctrack/linuxproc) and needs
+# /sys/fs/cgroup/system.slice to exist with delegated controllers. A container's cgroup root has no
+# such slice and cannot delegate controllers while it holds processes, so move them to a leaf first.
+prepare_cgroup() {
+    [ -f /sys/fs/cgroup/cgroup.controllers ] || return 0
+    mkdir -p /sys/fs/cgroup/init
+    while read -r pid; do echo "$pid" > /sys/fs/cgroup/init/cgroup.procs 2>/dev/null || true; done \
+        < /sys/fs/cgroup/cgroup.procs
+    for c in $(cat /sys/fs/cgroup/cgroup.controllers); do
+        echo "+$c" > /sys/fs/cgroup/cgroup.subtree_control 2>/dev/null || true
+    done
+    mkdir -p /sys/fs/cgroup/system.slice
+}
+
 install_config() {
     cp /etc/slurm-dev/slurm.conf /etc/slurm-dev/gres.conf /etc/slurm-dev/cgroup.conf /etc/slurm/
     install -o slurm -g slurm -m 0600 /etc/slurm-dev/slurmdbd.conf /etc/slurm/slurmdbd.conf
@@ -77,6 +91,7 @@ case "$role" in
         install_config
         start_munge
         prepare_scratch
+        prepare_cgroup
         # Fake GPU device nodes (NVIDIA major 195) for gres.conf File= entries.
         for i in 0 1; do
             [ -e "/dev/nvidia$i" ] || mknod -m 0666 "/dev/nvidia$i" c 195 "$i"
