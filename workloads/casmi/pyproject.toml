@@ -1,0 +1,25 @@
+[project]
+name = "acm-casmi"
+version = "0.1.0"
+description = "Enveda CASMI 2026 workload: data pipeline, exact MRR@25 evaluator, submission validator."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.27",
+    "numpy>=1.26",
+    "obstore>=0.4",
+    "pandas>=2.2",
+    "pyarrow>=17",
+    "pydantic>=2.9",
+    "rdkit==2026.3.3",
+]
+
+[project.scripts]
+casmi = "casmi.cli:main"
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/casmi"]
