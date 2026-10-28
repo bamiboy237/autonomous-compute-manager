@@ -5,5 +5,6 @@ Self-hosted infrastructure that runs long computational campaigns across Slurm c
 - [Project context](docs/PROJECT_CONTEXT.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Contributor and agent guide](AGENTS.md)
+- [Orchestration guide](docs/ORCHESTRATION.md)
 
 Status: architecture settled; implementation starting.
