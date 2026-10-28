@@ -25,6 +25,8 @@ cp .env.example .env
 | `just up` / `just down -v` | start (and wait until healthy) / stop and reset the Compose stack |
 | `just ps` / `just logs [svc…]` | stack status and health / follow logs |
 | `just test-integration` | tests marked `integration` against the running stack |
+| `just up-slurm` / `just down-slurm -v` | start / stop and reset the containerized Slurm cluster ([deploy/slurm-dev](../deploy/slurm-dev/README.md)) |
+| `just test-slurm` | tests marked `slurm` against the running cluster |
 | `just migrate` | apply database migrations |
 | `just ci` | lint + typecheck + unit tests, as CI runs them |
 
@@ -61,9 +63,9 @@ The Go daemon lives in `edge/` (`cd edge && go test ./...`).
 - Unit tests run everywhere and must not touch the network or Docker.
 - `@pytest.mark.integration` tests need `just up`.
 - Repository-level tests (not tied to one package) live in `tests/`, e.g. the dev stack config check and smoke test.
-- `@pytest.mark.slurm` tests need the containerized Slurm cluster.
+- `@pytest.mark.slurm` tests need the containerized Slurm cluster (`just up-slurm`).
 - Async tests run under `pytest-asyncio` in auto mode, so plain `async def test_...` works.
 
 ## CI
 
-`.github/workflows/ci.yml` runs four required checks on every PR: `lint`, `unit`, `go`, `integration`. Keep these job names stable: branch protection depends on them.
+`.github/workflows/ci.yml` runs four required checks on every PR: `lint`, `unit`, `go`, `integration`. Keep these job names stable: branch protection depends on them. A fifth job, `slurm`, boots the Slurm dev cluster and runs `pytest -m slurm`; it is not required yet.

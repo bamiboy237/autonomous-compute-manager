@@ -3,6 +3,7 @@
 set dotenv-load := true
 
 compose := "docker compose -f deploy/compose/compose.yaml"
+slurm_compose := "docker compose -f deploy/slurm-dev/compose.yaml --profile slurm"
 
 default:
     @just --list
@@ -52,6 +53,32 @@ ps:
 # Follow dev stack logs (optionally for given services)
 logs *services:
     {{compose}} --profile '*' logs -f {{services}}
+
+# Build and start the containerized Slurm cluster and wait until it accepts jobs
+up-slurm:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    key=deploy/slurm-dev/.ssh/id_ed25519
+    if [ ! -f "$key" ]; then
+        mkdir -p "$(dirname "$key")"
+        if command -v ssh-keygen >/dev/null; then
+            ssh-keygen -q -t ed25519 -N '' -C acm-slurm-dev -f "$key"
+        else
+            {{slurm_compose}} build init
+            docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/$(dirname "$key"):/out" \
+                --entrypoint ssh-keygen acm/slurm-dev:23.11.4 \
+                -q -t ed25519 -N '' -C acm-slurm-dev -f /out/id_ed25519
+        fi
+    fi
+    {{slurm_compose}} up -d --build --wait
+
+# Stop the Slurm cluster (pass -v to drop volumes)
+down-slurm *args:
+    {{slurm_compose}} down {{args}}
+
+# Tests marked `slurm` against the running cluster (`just up-slurm` first)
+test-slurm:
+    uv run pytest -m slurm
 
 # Apply database migrations
 migrate:

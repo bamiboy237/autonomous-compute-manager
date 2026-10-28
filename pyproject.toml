@@ -19,6 +19,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "asyncssh>=2.24",
+    "httpx>=0.28",
     "aioboto3>=15.5.0",
     "asyncpg>=0.32.0",
     "clickhouse-connect>=1.11.0",
